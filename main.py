@@ -453,3 +453,5 @@ root.bind('<Key>', on_key_press)
 update_mouse_position()
 update_coordinate_display()
 root.mainloop()
+# pyinstaller --noconfirm --onefile --windowed app.py
+
