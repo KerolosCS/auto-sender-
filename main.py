@@ -10,13 +10,72 @@ from watchdog.events import FileSystemEventHandler
 
 # Global variables
 file_paths = []
-file_path = ""  # ما زلنا نحتاجه لحذف الأرقام
+file_path = ""  # Still needed for deleting numbers
 numbers = []
 index = 0
 running = False
 last_hash = ""
 file_observer = None
 current_file_label = None
+language = "arabic"  # Default language
+
+# Language dictionaries
+translations = {
+    "arabic": {
+        "title": "🧠 مرسل الأرقام التلقائي - التحديث التلقائي",
+        "no_file": "لا يوجد ملف محمل",
+        "load_button": "📂 تحميل ملف أرقام",
+        "textbox_label": "📌 إحداثيات مربع الإدخال:",
+        "button_label": "📌 إحداثيات زر الضغط:",
+        "delay_label": "⏱️ وقت الانتظار بين كل رقم:",
+        "start_button": "▶️ ابدأ",
+        "stop_button": "⛔ إيقاف",
+        "not_loaded": "لم يتم التحميل بعد",
+        "mouse_pos": "🖱️ Mouse: X=0, Y=0",
+        "coords_instruction": "لتحديث الإحداثيات: ضع مؤشر الفأرة ثم اضغط (t) لمربع النص أو (b) للزر",
+        "button_text": "إحداثيات الزر:",
+        "textbox_text": "إحداثيات مربع النص:",
+        "not_captured": "لم يتم التقاط",
+        "no_numbers": "لا توجد أرقام مُحمّلة!",
+        "coord_error": "❌ تأكد من كتابة الإحداثيات بشكل صحيح (مثال: 800,400)",
+        "delay_error": "❌ تأكد من كتابة وقت الانتظار بشكل صحيح (مثال: 2)",
+        "loaded_status": "📄 تم تحميل {count} رقم من {files} ملف",
+        "sending_status": "✅ تم إرسال: {current}/{total}",
+        "paused_status": "⛔ تم الإيقاف المؤقت.",
+        "completed": "✅ كل الأرقام خلصت.",
+        "update_button": "إنجليزي / English",
+        "button_update": "📍 تم تحديث إحداثيات الزرار: {x},{y}",
+        "textbox_update": "📍 تم تحديث إحداثيات مربع النص: {x},{y}",
+        "auto_update": "♻️ تم التحديث التلقائي ({count} رقم)"
+    },
+    "english": {
+        "title": "🧠 Auto Number Sender - Auto Reload",
+        "no_file": "No file loaded",
+        "load_button": "📂 Load Numbers File",
+        "textbox_label": "📌 Textbox Coordinates:",
+        "button_label": "📌 Button Coordinates:",
+        "delay_label": "⏱️ Delay between numbers:",
+        "start_button": "▶️ Start",
+        "stop_button": "⛔ Stop",
+        "not_loaded": "Not loaded yet",
+        "mouse_pos": "🖱️ Mouse: X=0, Y=0",
+        "coords_instruction": "To update coordinates: Position mouse then press (t) for textbox or (b) for button",
+        "button_text": "Button Coordinates:",
+        "textbox_text": "Textbox Coordinates:",
+        "not_captured": "Not captured",
+        "no_numbers": "No numbers loaded!",
+        "coord_error": "❌ Make sure coordinates are correct (example: 800,400)",
+        "delay_error": "❌ Make sure delay is correct (example: 2)",
+        "loaded_status": "📄 Loaded {count} numbers from {files} files",
+        "sending_status": "✅ Sent: {current}/{total}",
+        "paused_status": "⛔ Paused.",
+        "completed": "✅ All numbers completed.",
+        "update_button": "عربي / Arabic",
+        "button_update": "📍 Button coordinates updated: {x},{y}",
+        "textbox_update": "📍 Textbox coordinates updated: {x},{y}",
+        "auto_update": "♻️ Auto updated ({count} numbers)"
+    }
+}
 
 
 class FileChangeHandler(FileSystemEventHandler):
@@ -53,11 +112,11 @@ def load_file(automatic=False):
 
             numbers[:] = all_numbers
             index = 0
-            status_label.config(text=f"♻️ تم التحديث التلقائي ({len(numbers)} رقم)")
-            print(f"[DEBUG] إعادة تحميل تلقائي من {len(file_paths)} ملف.")
+            status_label.config(text=translations[language]["auto_update"].format(count=len(numbers)))
+            print(f"[DEBUG] Auto reloaded from {len(file_paths)} files.")
 
         except Exception as e:
-            print(f"[ERROR] فشل التحديث التلقائي: {e}")
+            print(f"[ERROR] Auto update failed: {e}")
         return
 
     selected_files = filedialog.askopenfilenames(filetypes=[("Text Files", "*.txt")])
@@ -77,18 +136,20 @@ def load_file(automatic=False):
         numbers = all_numbers
         index = 0
         file_paths = list(selected_files)
-        file_path = file_paths[0]  # نستخدمه فقط للحذف بعد الإرسال
+        file_path = file_paths[0]  # Still needed for deletion after sending
 
-        status_label.config(text=f"📄 تم تحميل {len(numbers)} رقم من {len(file_paths)} ملف")
-        current_file_label.config(text="الملفات الحالية: " + ", ".join(combined_name))
+        status_label.config(
+            text=translations[language]["loaded_status"].format(count=len(numbers), files=len(file_paths)))
+        current_file_label.config(
+            text=translations[language]["no_file"] if not combined_name else ", ".join(combined_name))
         update_coordinate_display()
         start_file_monitoring()
 
-        print(f"[DEBUG] تم تحميل {len(numbers)} رقم من عدة ملفات.")
+        print(f"[DEBUG] Loaded {len(numbers)} numbers from multiple files.")
 
     except Exception as e:
-        messagebox.showerror("خطأ", f"❌ لا يمكن قراءة الملفات:\n{str(e)}")
-        print(f"[ERROR] فشل تحميل الملفات: {e}")
+        messagebox.showerror("Error", f"❌ Cannot read files:\n{str(e)}")
+        print(f"[ERROR] Failed to load files: {e}")
 
 
 def start_file_monitoring():
@@ -126,7 +187,7 @@ def send_numbers():
     global index, running
 
     if not numbers:
-        messagebox.showwarning("تحذير", "لا توجد أرقام مُحمّلة!")
+        messagebox.showwarning(translations[language]["no_numbers"], translations[language]["no_numbers"])
         return
 
     try:
@@ -137,13 +198,13 @@ def send_numbers():
         button_x = int(button_coords[0].strip())
         button_y = int(button_coords[1].strip())
     except:
-        messagebox.showerror("خطأ", "❌ تأكد من كتابة الإحداثيات بشكل صحيح (مثال: 800,400)")
+        messagebox.showerror("Error", translations[language]["coord_error"])
         return
 
     try:
         delay = float(delay_entry.get().strip())
     except:
-        messagebox.showerror("خطأ", "❌ تأكد من كتابة وقت الانتظار بشكل صحيح (مثال: 2)")
+        messagebox.showerror("Error", translations[language]["delay_error"])
         return
 
     running = True
@@ -163,11 +224,11 @@ def send_numbers():
         time.sleep(delay)
 
         index += 1
-        # 🧹 حذف الرقم اللي اتبعت من الملف وتحديثه
+        # Delete the sent number from the file and update it
         try:
             from collections import Counter
 
-            # حساب تكرار الأرقام المتبقية
+            # Count remaining numbers
             remaining_numbers = numbers[index:]
             remaining_counter = Counter(remaining_numbers)
 
@@ -185,30 +246,27 @@ def send_numbers():
                         new_lines.append(num)
                         remaining_counter[num] -= 1
                     else:
-                        continue  # هذا الرقم تم إرساله، فلا نضيفه
+                        continue  # This number has been sent, don't include it
 
                 with open(path, "w", encoding='utf-8') as f:
                     f.write("\n".join(new_lines) + "\n")
 
-            print(f"[DEBUG] تم حذف الرقم '{number}' من الملفات بدقة باستخدام Counter.")
-
-            # print(f"[DEBUG] تم حذف الرقم '{number}' من جميع الملفات.")
+            print(f"[DEBUG] Deleted number '{number}' from files using Counter.")
 
         except Exception as e:
-            print(f"[ERROR] فشل تحديث الملفات بعد الإرسال: {e}")
+            print(f"[ERROR] Failed to update files after sending: {e}")
 
-        # status_label.config(text=f"✅ تم إرسال: {index}/{len(numbers)}")
-        # root.update()
-        root.after(0, lambda: status_label.config(text=f"✅ تم إرسال: {index}/{len(numbers)}"))
+        root.after(0, lambda: status_label.config(
+            text=translations[language]["sending_status"].format(current=index, total=len(numbers))))
 
     if index >= len(numbers):
-        messagebox.showinfo("تم", "✅ كل الأرقام خلصت.")
+        messagebox.showinfo("Done", translations[language]["completed"])
     running = False
 
 
 def start_thread():
     if not numbers:
-        messagebox.showwarning("تحذير", "حمّل ملف أرقام أولاً.")
+        messagebox.showwarning("Warning", translations[language]["no_numbers"])
         return
     threading.Thread(target=send_numbers, daemon=True).start()
 
@@ -216,7 +274,7 @@ def start_thread():
 def stop():
     global running
     running = False
-    status_label.config(text="⛔ تم الإيقاف المؤقت.")
+    status_label.config(text=translations[language]["paused_status"])
 
 
 def update_mouse_position():
@@ -232,14 +290,14 @@ def on_key_press(event):
     if key == 'b':
         button_entry.delete(0, tk.END)
         button_entry.insert(0, f"{x},{y}")
-        status_label.config(text=f"📍 تم تحديث إحداثيات الزرار: {x},{y}")
+        status_label.config(text=translations[language]["button_update"].format(x=x, y=y))
         canvas.itemconfig(button_indicator, fill="#4CAF50", outline="#4CAF50")
         canvas.itemconfig(button_text, text=f"{x},{y}")
 
     elif key == 't':
         textbox_entry.delete(0, tk.END)
         textbox_entry.insert(0, f"{x},{y}")
-        status_label.config(text=f"📍 تم تحديث إحداثيات مربع النص: {x},{y}")
+        status_label.config(text=translations[language]["textbox_update"].format(x=x, y=y))
         canvas.itemconfig(textbox_indicator, fill="#2196F3", outline="#2196F3")
         canvas.itemconfig(textbox_text, text=f"{x},{y}")
 
@@ -260,6 +318,36 @@ def update_coordinate_display():
     root.after(1000, update_coordinate_display)
 
 
+def toggle_language():
+    global language
+    language = "english" if language == "arabic" else "arabic"
+    update_ui_language()
+    language_button.config(text=translations[language]["update_button"])
+
+
+def update_ui_language():
+    root.title(translations[language]["title"])
+    current_file_label.config(text=translations[language]["no_file"])
+    load_btn.config(text=translations[language]["load_button"])
+    textbox_label.config(text=translations[language]["textbox_label"])
+    button_label.config(text=translations[language]["button_label"])
+    delay_label.config(text=translations[language]["delay_label"])
+    start_btn.config(text=translations[language]["start_button"])
+    stop_btn.config(text=translations[language]["stop_button"])
+    status_label.config(text=translations[language]["not_loaded"])
+    instruction_label.config(text=translations[language]["coords_instruction"])
+
+    # Update canvas text
+    canvas.itemconfig(button_canvas_text, text=translations[language]["button_text"])
+    canvas.itemconfig(textbox_canvas_text, text=translations[language]["textbox_text"])
+
+    # Update coordinate display if empty
+    if not button_entry.get():
+        canvas.itemconfig(button_text, text=translations[language]["not_captured"])
+    if not textbox_entry.get():
+        canvas.itemconfig(textbox_text, text=translations[language]["not_captured"])
+
+
 def on_closing():
     global running, file_observer
     running = False
@@ -272,20 +360,22 @@ def on_closing():
 
 # GUI Setup
 root = tk.Tk()
-root.title("🧠 Auto Number Sender - التحديث التلقائي")
-root.geometry("550x650")
+root.title(translations[language]["title"])
+root.geometry("550x700")  # Slightly taller for the language button
 root.protocol("WM_DELETE_WINDOW", on_closing)
 root.configure(bg="#f0f0f0")
+
+# Language button at the top
+language_button = tk.Button(root, text=translations[language]["update_button"], command=toggle_language,
+                            font=("Arial", 10), bg="#9E9E9E", fg="white")
+language_button.pack(pady=5, fill=tk.X, padx=20)
 
 file_frame = tk.Frame(root, bg="#f0f0f0")
 file_frame.pack(pady=5, fill=tk.X)
 
-current_file_label = tk.Label(file_frame, text="لا يوجد ملف محمل", font=("Arial", 10, "bold"), fg="#333333",
-                              bg="#f0f0f0")
+current_file_label = tk.Label(file_frame, text=translations[language]["no_file"],
+                              font=("Arial", 10, "bold"), fg="#333333", bg="#f0f0f0")
 current_file_label.pack(side=tk.LEFT, padx=10)
-#
-# change_file_btn = tk.Button(file_frame, text="تغيير الملف", command=lambda: load_file(automatic=False), font=("Arial", 10), bg="#607D8B", fg="white")
-# change_file_btn.pack(side=tk.RIGHT, padx=10)
 
 coord_frame = tk.Frame(root, bg="#ffffff", bd=2, relief=tk.RIDGE)
 coord_frame.pack(pady=10, padx=20, fill=tk.X)
@@ -296,34 +386,41 @@ canvas.pack(pady=10, padx=10)
 button_indicator = canvas.create_oval(350, 10, 370, 30, fill="#f0f0f0", outline="#cccccc", width=2)
 textbox_indicator = canvas.create_oval(350, 50, 370, 70, fill="#f0f0f0", outline="#cccccc", width=2)
 
-canvas.create_text(50, 20, text="إحداثيات الزر:", font=("Arial", 10, "bold"), anchor="w")
-canvas.create_text(50, 60, text="إحداثيات مربع النص:", font=("Arial", 10, "bold"), anchor="w")
-button_text = canvas.create_text(200, 20, text="لم يتم التقاط", font=("Arial", 10), fill="#777777")
-textbox_text = canvas.create_text(200, 60, text="لم يتم التقاط", font=("Arial", 10), fill="#777777")
+button_canvas_text = canvas.create_text(50, 20, text=translations[language]["button_text"],
+                                        font=("Arial", 10, "bold"), anchor="w")
+textbox_canvas_text = canvas.create_text(50, 60, text=translations[language]["textbox_text"],
+                                         font=("Arial", 10, "bold"), anchor="w")
+button_text = canvas.create_text(200, 20, text=translations[language]["not_captured"],
+                                 font=("Arial", 10), fill="#777777")
+textbox_text = canvas.create_text(200, 60, text=translations[language]["not_captured"],
+                                  font=("Arial", 10), fill="#777777")
 
-instruction_label = tk.Label(root, text="لتحديث الإحداثيات: ضع مؤشر الفأرة ثم اضغط (t) لمربع النص أو (b) للزر",
+instruction_label = tk.Label(root, text=translations[language]["coords_instruction"],
                              font=("Arial", 10, "bold"), fg="#2196F3", bg="#f0f0f0")
 instruction_label.pack(pady=5)
 
 content_frame = tk.Frame(root, bg="#f0f0f0")
 content_frame.pack(pady=10, padx=20, fill=tk.BOTH, expand=True)
 
-load_btn = tk.Button(content_frame, text="📂 تحميل ملف أرقام", command=lambda: load_file(automatic=False),
-                     font=("Arial", 12), bg="#2196F3", fg="white")
+load_btn = tk.Button(content_frame, text=translations[language]["load_button"],
+                     command=lambda: load_file(automatic=False), font=("Arial", 12), bg="#2196F3", fg="white")
 load_btn.grid(row=0, column=0, columnspan=2, pady=10, sticky="ew")
 
-tk.Label(content_frame, text="📌 إحداثيات مربع الإدخال:", font=("Arial", 10), bg="#f0f0f0").grid(row=1, column=0,
-                                                                                                 sticky="w")
+textbox_label = tk.Label(content_frame, text=translations[language]["textbox_label"],
+                         font=("Arial", 10), bg="#f0f0f0")
+textbox_label.grid(row=1, column=0, sticky="w")
 textbox_entry = tk.Entry(content_frame, font=("Arial", 11))
 textbox_entry.grid(row=1, column=1, pady=5, sticky="ew")
 
-tk.Label(content_frame, text="📌 إحداثيات زر الضغط:", font=("Arial", 10), bg="#f0f0f0").grid(row=2, column=0,
-                                                                                             sticky="w")
+button_label = tk.Label(content_frame, text=translations[language]["button_label"],
+                        font=("Arial", 10), bg="#f0f0f0")
+button_label.grid(row=2, column=0, sticky="w")
 button_entry = tk.Entry(content_frame, font=("Arial", 11))
 button_entry.grid(row=2, column=1, pady=5, sticky="ew")
 
-tk.Label(content_frame, text="⏱️ وقت الانتظار بين كل رقم:", font=("Arial", 10), bg="#f0f0f0").grid(row=3, column=0,
-                                                                                                   sticky="w")
+delay_label = tk.Label(content_frame, text=translations[language]["delay_label"],
+                       font=("Arial", 10), bg="#f0f0f0")
+delay_label.grid(row=3, column=0, sticky="w")
 delay_entry = tk.Entry(content_frame, font=("Arial", 11))
 delay_entry.insert(0, "2")
 delay_entry.grid(row=3, column=1, pady=5, sticky="ew")
@@ -331,19 +428,23 @@ delay_entry.grid(row=3, column=1, pady=5, sticky="ew")
 btn_frame = tk.Frame(content_frame, bg="#f0f0f0")
 btn_frame.grid(row=4, column=0, columnspan=2, pady=15)
 
-start_btn = tk.Button(btn_frame, text="▶️ ابدأ", command=start_thread, font=("Arial", 12), bg="#4CAF50", fg="white")
+start_btn = tk.Button(btn_frame, text=translations[language]["start_button"], command=start_thread,
+                      font=("Arial", 12), bg="#4CAF50", fg="white")
 start_btn.pack(side=tk.LEFT, padx=5)
 
-stop_btn = tk.Button(btn_frame, text="⛔ إيقاف", command=stop, font=("Arial", 12), bg="#F44336", fg="white")
+stop_btn = tk.Button(btn_frame, text=translations[language]["stop_button"], command=stop,
+                     font=("Arial", 12), bg="#F44336", fg="white")
 stop_btn.pack(side=tk.LEFT, padx=5)
 
 status_frame = tk.Frame(content_frame, bg="#f0f0f0")
 status_frame.grid(row=5, column=0, columnspan=2, pady=10)
 
-status_label = tk.Label(status_frame, text="لم يتم التحميل بعد", font=("Arial", 11), bg="#f0f0f0")
+status_label = tk.Label(status_frame, text=translations[language]["not_loaded"],
+                        font=("Arial", 11), bg="#f0f0f0")
 status_label.pack()
 
-mouse_pos_label = tk.Label(status_frame, text="🖱️ Mouse: X=0, Y=0", font=("Arial", 10), bg="#f0f0f0")
+mouse_pos_label = tk.Label(status_frame, text=translations[language]["mouse_pos"],
+                           font=("Arial", 10), bg="#f0f0f0")
 mouse_pos_label.pack()
 
 content_frame.columnconfigure(1, weight=1)
